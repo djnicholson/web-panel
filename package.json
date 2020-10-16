@@ -24,7 +24,7 @@
     "url": "https://github.com/djnicholson/web-panel.git"
   },
   "activationEvents": [
-    "workspaceContains:.vscode/webpanel.json"
+    "workspaceContains:**/.vscode/webpanel.json"
   ],
   "keywords": [
     "Web",
