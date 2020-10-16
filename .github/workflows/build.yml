@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  buildextension:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: ⏳ Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: 💿 Setup NodeJS
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12.x
+      - name: 🚀 Build
+        run: |
+          npm ci
+          npm run compile
+      - name: 🎁 Package
+        id: package
+        shell: bash
+        run: |
+          npm run package
+          cp *.vsix web-panel.vsix
+      - name: 🌎 Release
+        uses: djnicholson/release-action@v2.9
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag-name: vNext
+          release-name: "vNext"
+          asset-name: "web-panel.vsix"
+          file: "web-panel.vsix"

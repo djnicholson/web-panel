@@ -1,0 +1,52 @@
+{
+  "name": "web-panel",
+  "publisher": "djnicholson",
+  "displayName": "Automatic web panel opener - webpanel.json",
+  "description": "Automatically opens web panels according to the webpanel.json file in the current workspace.",
+  "version": "1.0.1",
+  "icon": "resources/logo.png",
+  "galleryBanner": {
+    "color": "#000000",
+    "theme": "light"
+  },
+  "author": "David Nicholson",
+  "engines": {
+    "vscode": "^1.48.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "bugs": {
+    "url": "https://github.com/djnicholson/web-panel/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/djnicholson/web-panel.git"
+  },
+  "activationEvents": [
+    "workspaceContains:.vscode/webpanel.json"
+  ],
+  "keywords": [
+    "Web",
+    "Front-end"
+  ],
+  "main": "./dist/extension/index.js",
+  "contributes": {},
+  "scripts": {
+    "compile": "webpack --config src/extension/webpack.config.js --mode development",
+    "compile-prod": "webpack --config src/extension/webpack.config.js --mode production",
+    "package": "npm run compile-prod && vsce package",
+    "watch": "webpack --config src/extension/webpack.config.js --mode development --watch --info-verbosity verbose"
+  },
+  "devDependencies": {
+    "@types/node": "^13.13.17",
+    "@types/vscode": "^1.48.0",
+    "ts-loader": "^7.0.5",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7",
+    "vsce": "^1.79.5",
+    "webpack": "^4.44.1",
+    "webpack-cli": "^3.3.12"
+  },
+  "dependencies": {}
+}
