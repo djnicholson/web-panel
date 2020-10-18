@@ -8,10 +8,11 @@
     "rootDir": "src",
     "outDir": "out",
     "strict": true,
+    "jsx": "react",
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "noUnusedParameters": true,
     "downlevelIteration": true
   },
-  "exclude": ["node_modules", "gulpfile.ts"]
+  "exclude": ["node_modules"]
 }

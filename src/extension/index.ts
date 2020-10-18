@@ -1,5 +1,7 @@
-import * as vscode from "vscode";
 import * as fs from "fs";
+import * as nodeFetch from "node-fetch";
+import * as path from "path";
+import * as vscode from "vscode";
 
 let fileSystemWatcher: vscode.FileSystemWatcher | null = null;
 
@@ -7,39 +9,82 @@ let panelsByUrl: { [url: string]: vscode.WebviewPanel } = {};
 
 let active = false;
 
-function loader(url: string) {
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<html style="height: 100%;>
-  <head>
-    <script>
-      function onError() {
-        setTimeout(() => document.querySelector("#iframe").src = "${url}", 1000);
-      }
-    </script>
-  </head>
-  <body style="width: 100%; height: 100%; margin: 0; padding: 0;">
-    <iframe id="iframe" style="width: 100%; height: 100%; margin: 0; border: 0" src="${url}" onError="onError()" />
-  </body>
-</html>
-`;
-}
+let context: vscode.ExtensionContext | null = null;
+
+let loading: { url: string; panel: vscode.WebviewPanel }[] = [];
 
 function ensurePanel(url: string) {
-  if (!panelsByUrl[url] || !panelsByUrl[url].visible) {
+  if (!active || !context) {
+    return;
+  }
+  const existingPanel = panelsByUrl[url];
+  if (!existingPanel || !existingPanel.visible) {
     const newPanel = vscode.window.createWebviewPanel(
       `web-panel-${url}`,
       url,
       vscode.ViewColumn.Beside,
-      { enableScripts: true }
+      { enableScripts: true, retainContextWhenHidden: true }
     );
-    newPanel.webview.html = loader(url);
+    newPanel.webview.html = fs
+      .readFileSync(
+        path.join(context.extensionPath, "dist", "panel", "index.html")
+      )
+      .toString()
+      .replace(
+        "[BASE_HREF]",
+        newPanel.webview
+          .asWebviewUri(
+            vscode.Uri.file(path.join(context.extensionPath, "dist", "panel"))
+          )
+          .toString() + "/"
+      );
+    newPanel.webview.onDidReceiveMessage(
+      () => ((newPanel as any)["accepting-messages"] = true)
+    );
+    newPanel.onDidDispose(() => delete panelsByUrl[url]);
     panelsByUrl[url] = newPanel;
+    loading.push({ url, panel: newPanel });
   }
 }
 
-function refresh(file: vscode.Uri) {
+async function loadUrls() {
+  if (!active) {
+    return;
+  }
+  try {
+    const toProcess = loading;
+    loading = [];
+    for (const _ of toProcess) {
+      const url = _.url;
+      const panel = _.panel;
+      const acceptingMessages = (panel as any)["accepting-messages"];
+      if (!acceptingMessages) {
+        console.log("web-panel", url, "Waiting for panel");
+        loading.push(_);
+      } else {
+        try {
+          await nodeFetch.default(url);
+          try {
+            panel.webview.postMessage({ url });
+            console.log("web-panel", url, "URL up");
+          } catch (e) {
+            console.log("web-panel", url, "Panel error", e.message);
+          }
+        } catch (e) {
+          console.log("web-panel", url, "Waiting for URL");
+          loading.push(_);
+        }
+      }
+    }
+  } finally {
+    setTimeout(loadUrls, 1000);
+  }
+}
+
+function refreshWebPanelJson(file: vscode.Uri) {
+  if (!active || !context) {
+    return;
+  }
   try {
     const fileContents = fs.readFileSync(file.fsPath);
     const urlList = JSON.parse(fileContents.toString());
@@ -59,18 +104,20 @@ function refresh(file: vscode.Uri) {
   }
 }
 
-export async function activate() {
+export async function activate(extensionContext: vscode.ExtensionContext) {
+  context = extensionContext;
   fileSystemWatcher?.dispose();
   fileSystemWatcher = vscode.workspace.createFileSystemWatcher(
     "**/.vscode/webpanel.json"
   );
-  fileSystemWatcher.onDidChange(refresh);
-  fileSystemWatcher.onDidCreate(refresh);
+  fileSystemWatcher.onDidChange(refreshWebPanelJson);
+  fileSystemWatcher.onDidCreate(refreshWebPanelJson);
   active = true;
   const runNow = await vscode.workspace.findFiles("**/.vscode/webpanel.json");
   for (const file of runNow) {
-    refresh(file);
+    refreshWebPanelJson(file);
   }
+  loadUrls();
 }
 
 export function deactivate() {
