@@ -23,7 +23,7 @@ export default function Frame() {
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column" }}>
       {!!iframeSrc && (
-        <iframe style={{ flex: "1" }} src={iframeSrc} ref={iframe} />
+        <iframe style={{ flex: "1", border: 0 }} src={iframeSrc} ref={iframe} />
       )}
       {!iframeSrc && (
         <div

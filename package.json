@@ -3,7 +3,7 @@
   "publisher": "djnicholson",
   "displayName": "Automatic web panel opener - webpanel.json",
   "description": "Automatically opens web panels according to the webpanel.json file in the current workspace.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "icon": "resources/logo.png",
   "galleryBanner": {
     "color": "#000000",
